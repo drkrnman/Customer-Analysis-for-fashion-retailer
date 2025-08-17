@@ -1,1 +1,1 @@
-# Customer-Analysis-for-fashion-retailer
+# Data-analisys-project---Global-fascion-retail-sales
