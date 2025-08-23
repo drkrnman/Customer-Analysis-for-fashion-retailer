@@ -3,7 +3,6 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
-from docx import Document
 import textwrap
 
 # ===== Helpers =====
@@ -16,17 +15,14 @@ def read_file(filename, file_type, base_dir=None):
         file_path = os.path.join(base_dir, filename)
         if file_type == 'csv':
             return pd.read_csv(file_path)
-        if file_type == 'docx':
-            doc = Document(file_path)
-            return [para.text for para in doc.paragraphs]
         print(f"Error: Unsupported file type '{file_type}'.")
         return pd.DataFrame() if file_type == 'csv' else []
     except FileNotFoundError:
         print(f"Error: File '{filename}' not found in {base_dir}.")
-        return pd.DataFrame() if file_type == 'csv' else []
+        return pd.DataFrame()
     except Exception as e:
         print(f"Error reading '{filename}': {e}")
-        return pd.DataFrame() if file_type == 'csv' else []
+        return pd.DataFrame()
 
 customers = read_file('customer_stats.csv', 'csv')
 
@@ -247,7 +243,7 @@ columns_str = {
 # =====================
 
 def read_summary():
-    return read_file('Executive_summary.docx', 'docx')
+    return []
 
 # =====================
 # 2. LTV Factors

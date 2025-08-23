@@ -29,17 +29,9 @@ from PySide6.QtPdfWidgets import QPdfView
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
-# Optional: DOCX -> HTML converter to preserve formatting
-try:
-    import mammoth  # type: ignore
-    HAS_MAMMOTH = True
-except Exception:
-    HAS_MAMMOTH = False
-
 from utils import (
     customers,
     columns_str,
-    read_file,
     compute_ltv_factors_for_column,
     compute_ltv_cohort_for_column,
     compute_revenue_structure_for_column,
@@ -122,63 +114,15 @@ class SummaryPage(QWidget):
         self._pdf_view = QPdfView(self)
         self._pdf_view.setPageMode(QPdfView.PageMode.MultiPage)
         self._pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
-        self._pdf_view.setVisible(False)
         layout.addWidget(self._pdf_view)
 
-        self.text = QTextEdit(self)
-        self.text.setReadOnly(True)
-        self.text.setStyleSheet("font-size: 16px;")
-        layout.addWidget(self.text)
         self.load_summary()
 
-    def _try_convert_docx_to_pdf(self, docx_path: str, out_dir: str) -> bool:
-        try:
-            lo_bin = shutil.which('soffice') or shutil.which('libreoffice')
-            if not lo_bin:
-                return False
-            result = subprocess.run(
-                [lo_bin, '--headless', '--convert-to', 'pdf', '--outdir', out_dir, docx_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=False,
-            )
-            return result.returncode == 0
-        except Exception:
-            return False
-
     def load_summary(self) -> None:
-        try:
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            pdf_path = os.path.join(base_dir, 'Executive_summary.pdf')
-            if not os.path.exists(pdf_path):
-                docx_path = os.path.join(base_dir, 'Executive_summary.docx')
-                if os.path.exists(docx_path):
-                    if self._try_convert_docx_to_pdf(docx_path, base_dir) and os.path.exists(pdf_path):
-                        pass
-            if os.path.exists(pdf_path):
-                self._pdf_doc.load(pdf_path)
-                self._pdf_view.setDocument(self._pdf_doc)
-                self._pdf_view.setVisible(True)
-                self.text.setVisible(False)
-                return
-
-            docx_path = os.path.join(base_dir, 'Executive_summary.docx')
-            if HAS_MAMMOTH and os.path.exists(docx_path):
-                with open(docx_path, 'rb') as f:
-                    result = mammoth.convert_to_html(f)
-                    html = result.value or ""
-                self._pdf_view.setVisible(False)
-                self.text.setVisible(True)
-                self.text.setHtml(html if html.strip() else "No executive summary found.")
-            else:
-                text_lines = read_file('Executive_summary.docx', 'docx')
-                self._pdf_view.setVisible(False)
-                self.text.setVisible(True)
-                self.text.setPlainText("\n".join(text_lines) if text_lines else "No executive summary found.")
-        except Exception as e:
-            self._pdf_view.setVisible(False)
-            self.text.setVisible(True)
-            self.text.setPlainText(f"Error loading summary: {e}")
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        pdf_path = os.path.join(base_dir, 'Executive_summary.pdf')
+        self._pdf_doc.load(pdf_path)
+        self._pdf_view.setDocument(self._pdf_doc)
 
 
 class LtvFactorsPage(QWidget):
