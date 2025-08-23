@@ -295,8 +295,8 @@ def compute_ltv_factors_for_column(df, column_name):
 
     metrics['LTV'] = ((metrics['first_purchase_sum'] + metrics['next_sum']) / metrics['customer_id']).round(2)
     metrics['Num of cust'] = metrics['customer_id'].round(0)
-    metrics['Pers of cust'] = (metrics['customer_id'] / len(df) * 100).round(1)
-    metrics['Perc rep cust'] = (metrics['returned_customer'] / metrics['customer_id'] * 100).round(1)
+    metrics['Pers of cust'] = (metrics['customer_id'] / len(df)).round(3)
+    metrics['Perc rep cust'] = (metrics['returned_customer'] / metrics['customer_id']).round(3)
     metrics['Avg num pur'] = (metrics['next_purchases_cnt'] / metrics['returned_customer']).round(1)
     metrics['First pur'] = (metrics['first_purchase_sum'] / metrics['customer_id']).round(2)
     metrics['Rep pur'] = (metrics['next_sum'] / metrics['returned_customer']).round(2)
