@@ -33,7 +33,6 @@ The app loads precomputed metrics from `customer_stats.csv` in the project root.
 - One chart per page is shown; tables are rendered via `QTableView`.
 - Business logic from the original CLI version is preserved; only the UI has changed to GUI.
 
-## Author
+## Authors
 Darya Korenman
-
 Ilia Usovich
