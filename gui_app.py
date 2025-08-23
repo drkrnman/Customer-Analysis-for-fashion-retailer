@@ -1,12 +1,10 @@
 import sys
 import os
-import shutil
-import subprocess
 from typing import Optional
 
 import pandas as pd
 
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QUrl
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -24,8 +22,8 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QHeaderView,
 )
-from PySide6.QtPdf import QPdfDocument
-from PySide6.QtPdfWidgets import QPdfView
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEngineSettings
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
@@ -110,19 +108,16 @@ class SummaryPage(QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 20px;")
         layout.addWidget(title)
 
-        self._pdf_doc = QPdfDocument(self)
-        self._pdf_view = QPdfView(self)
-        self._pdf_view.setPageMode(QPdfView.PageMode.MultiPage)
-        self._pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
-        layout.addWidget(self._pdf_view)
+        self.web = QWebEngineView(self)
+        self.web.settings().setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, True)
+        layout.addWidget(self.web)
 
         self.load_summary()
 
     def load_summary(self) -> None:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         pdf_path = os.path.join(base_dir, 'Executive_summary.pdf')
-        self._pdf_doc.load(pdf_path)
-        self._pdf_view.setDocument(self._pdf_doc)
+        self.web.setUrl(QUrl.fromLocalFile(pdf_path))
 
 
 class LtvFactorsPage(QWidget):
