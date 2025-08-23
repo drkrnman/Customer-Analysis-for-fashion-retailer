@@ -1,4 +1,4 @@
-# Global Fashion Retail Sales - GUI
+# Global Fashion Retail Sales 
 
 ## Overview
 Interactive PySide6 desktop app to analyze customer LTV, cohorts, revenue structure, and run basic statistical tests.
