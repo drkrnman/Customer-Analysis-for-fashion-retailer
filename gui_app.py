@@ -1,4 +1,5 @@
 import sys
+import os
 from typing import Optional
 
 import pandas as pd
@@ -20,10 +21,16 @@ from PySide6.QtWidgets import (
     QTableView,
     QSizePolicy,
     QHeaderView,
-    QGroupBox,
 )
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+
+# Optional: DOCX -> HTML converter to preserve formatting
+try:
+    import mammoth  # type: ignore
+    HAS_MAMMOTH = True
+except Exception:
+    HAS_MAMMOTH = False
 
 from utils import (
     customers,
@@ -104,18 +111,26 @@ class SummaryPage(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         title = QLabel("Executive Summary")
-        title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        title.setStyleSheet("font-weight: bold; font-size: 20px;")
         layout.addWidget(title)
 
         self.text = QTextEdit(self)
         self.text.setReadOnly(True)
+        self.text.setStyleSheet("font-size: 16px;")
         layout.addWidget(self.text)
         self.load_summary()
 
     def load_summary(self) -> None:
         try:
-            text_lines = read_file('Executive_summary.docx', 'docx')
-            self.text.setPlainText("\n".join(text_lines) if text_lines else "No executive summary found.")
+            docx_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Executive_summary.docx')
+            if HAS_MAMMOTH and os.path.exists(docx_path):
+                with open(docx_path, 'rb') as f:
+                    result = mammoth.convert_to_html(f)
+                    html = result.value or ""
+                self.text.setHtml(html if html.strip() else "No executive summary found.")
+            else:
+                text_lines = read_file('Executive_summary.docx', 'docx')
+                self.text.setPlainText("\n".join(text_lines) if text_lines else "No executive summary found.")
         except Exception as e:
             self.text.setPlainText(f"Error loading summary: {e}")
 
@@ -128,12 +143,16 @@ class LtvFactorsPage(QWidget):
         root = QVBoxLayout(self)
 
         controls = QHBoxLayout()
-        controls.addWidget(QLabel("Split by:"))
+        lbl = QLabel("Split by:")
+        lbl.setStyleSheet("font-size: 14px;")
+        controls.addWidget(lbl)
         self.combo = QComboBox()
         self.combo.addItems(list(self.key_by_label.keys()))
+        self.combo.setStyleSheet("font-size: 14px;")
         controls.addWidget(self.combo)
         controls.addStretch(1)
         self.run_btn = QPushButton("Build")
+        self.run_btn.setStyleSheet("font-size: 14px;")
         self.run_btn.clicked.connect(self.on_build)
         controls.addWidget(self.run_btn)
         root.addLayout(controls)
@@ -142,6 +161,7 @@ class LtvFactorsPage(QWidget):
         self.table_model = PandasModel()
         self.table.setModel(self.table_model)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.setStyleSheet("font-size: 14px;")
         root.addWidget(self.table, stretch=1)
 
         self.plot = PlotWidget(self)
@@ -169,40 +189,22 @@ class LtvCohortsPage(QWidget):
         root = QVBoxLayout(self)
 
         controls = QHBoxLayout()
-        controls.addWidget(QLabel("Split by:"))
+        lbl = QLabel("Split by:")
+        lbl.setStyleSheet("font-size: 14px;")
+        controls.addWidget(lbl)
         self.combo = QComboBox()
         self.combo.addItems(list(self.key_by_label.keys()))
+        self.combo.setStyleSheet("font-size: 14px;")
         controls.addWidget(self.combo)
         controls.addStretch(1)
         self.run_btn = QPushButton("Build")
+        self.run_btn.setStyleSheet("font-size: 14px;")
         self.run_btn.clicked.connect(self.on_build)
         controls.addWidget(self.run_btn)
         root.addLayout(controls)
 
-        group_tables = QHBoxLayout()
-        # LTV table
-        ltv_box = QGroupBox("LTV (Revenue per 1 customer) in 6 months")
-        ltv_layout = QVBoxLayout(ltv_box)
-        self.table_ltv = QTableView(self)
-        self.model_ltv = PandasModel()
-        self.table_ltv.setModel(self.model_ltv)
-        self.table_ltv.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        ltv_layout.addWidget(self.table_ltv)
-        group_tables.addWidget(ltv_box)
-
-        # Retention table
-        ret_box = QGroupBox("Retention rate (percentage of returned customers) in 6 months")
-        ret_layout = QVBoxLayout(ret_box)
-        self.table_ret = QTableView(self)
-        self.model_ret = PandasModel()
-        self.table_ret.setModel(self.model_ret)
-        self.table_ret.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        ret_layout.addWidget(self.table_ret)
-        group_tables.addWidget(ret_box)
-        root.addLayout(group_tables, stretch=1)
-
         self.plot = PlotWidget(self)
-        root.addWidget(self.plot, stretch=2)
+        root.addWidget(self.plot, stretch=1)
 
         self.on_build()
 
@@ -210,14 +212,10 @@ class LtvCohortsPage(QWidget):
         try:
             key = self.key_by_label.get(self.combo.currentText())
             metric_ltv, metric_returned_cust, title, index_name = compute_ltv_cohort_for_column(customers, key)
-            self.model_ltv.setDataFrame(metric_ltv)
-            self.model_ret.setDataFrame(metric_returned_cust)
             fig = create_line_plot(metric_ltv, metric_returned_cust, title, index_name, figsize=(16, 9), show=False)
             self.plot.set_figure(fig)
         except Exception as e:
             self.plot.set_figure(None)
-            self.model_ltv.setDataFrame(pd.DataFrame())
-            self.model_ret.setDataFrame(pd.DataFrame())
 
 
 class RevenueStructurePage(QWidget):
@@ -228,12 +226,16 @@ class RevenueStructurePage(QWidget):
         root = QVBoxLayout(self)
 
         controls = QHBoxLayout()
-        controls.addWidget(QLabel("Split by:"))
+        lbl = QLabel("Split by:")
+        lbl.setStyleSheet("font-size: 14px;")
+        controls.addWidget(lbl)
         self.combo = QComboBox()
         self.combo.addItems(list(self.key_by_label.keys()))
+        self.combo.setStyleSheet("font-size: 14px;")
         controls.addWidget(self.combo)
         controls.addStretch(1)
         self.run_btn = QPushButton("Build")
+        self.run_btn.setStyleSheet("font-size: 14px;")
         self.run_btn.clicked.connect(self.on_build)
         controls.addWidget(self.run_btn)
         root.addLayout(controls)
@@ -242,6 +244,7 @@ class RevenueStructurePage(QWidget):
         self.table_model = PandasModel()
         self.table.setModel(self.table_model)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.setStyleSheet("font-size: 14px;")
         root.addWidget(self.table, stretch=1)
 
         self.plot = PlotWidget(self)
@@ -267,9 +270,12 @@ class StatsTestsPage(QWidget):
         root = QVBoxLayout(self)
 
         controls = QHBoxLayout()
-        controls.addWidget(QLabel("Test:"))
+        lbl = QLabel("Test:")
+        lbl.setStyleSheet("font-size: 14px;")
+        controls.addWidget(lbl)
         self.test_combo = QComboBox()
         self.test_combo.addItems(["Chi-square test", "T-test"])
+        self.test_combo.setStyleSheet("font-size: 14px;")
         self.test_combo.currentIndexChanged.connect(self.on_test_change)
         controls.addWidget(self.test_combo)
         controls.addStretch(1)
@@ -289,16 +295,20 @@ class StatsTestsPage(QWidget):
         layout = QVBoxLayout(page)
 
         ctrl = QHBoxLayout()
-        ctrl.addWidget(QLabel("Across:"))
+        lbl = QLabel("Across:")
+        lbl.setStyleSheet("font-size: 14px;")
+        ctrl.addWidget(lbl)
         self.chi_across = QComboBox()
         self.chi_mapping = {
             'By countries': ('customer_country', 'Customer Country'),
             'By payment methods': ('first_payment_method', 'First purchase payment method'),
         }
         self.chi_across.addItems(list(self.chi_mapping.keys()))
+        self.chi_across.setStyleSheet("font-size: 14px;")
         ctrl.addWidget(self.chi_across)
         ctrl.addStretch(1)
         self.chi_run = QPushButton("Run")
+        self.chi_run.setStyleSheet("font-size: 14px;")
         self.chi_run.clicked.connect(self.on_run_chi2)
         ctrl.addWidget(self.chi_run)
         layout.addLayout(ctrl)
@@ -307,18 +317,25 @@ class StatsTestsPage(QWidget):
         self.model_chi_counts = PandasModel()
         self.table_chi_counts.setModel(self.model_chi_counts)
         self.table_chi_counts.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        layout.addWidget(QLabel("Number of customers:"))
+        self.table_chi_counts.setStyleSheet("font-size: 14px;")
+        label_counts = QLabel("Number of customers:")
+        label_counts.setStyleSheet("font-size: 14px;")
+        layout.addWidget(label_counts)
         layout.addWidget(self.table_chi_counts)
 
         self.table_chi_percent = QTableView(self)
         self.model_chi_percent = PandasModel()
         self.table_chi_percent.setModel(self.model_chi_percent)
         self.table_chi_percent.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        layout.addWidget(QLabel("Number of customers. % of totals by selected dimension:"))
+        self.table_chi_percent.setStyleSheet("font-size: 14px;")
+        label_percent = QLabel("Number of customers. % of totals by selected dimension:")
+        label_percent.setStyleSheet("font-size: 14px;")
+        layout.addWidget(label_percent)
         layout.addWidget(self.table_chi_percent)
 
         self.chi_text = QTextEdit(self)
         self.chi_text.setReadOnly(True)
+        self.chi_text.setStyleSheet("font-size: 14px;")
         layout.addWidget(self.chi_text)
 
         return page
@@ -328,14 +345,21 @@ class StatsTestsPage(QWidget):
         layout = QVBoxLayout(page)
 
         ctrl = QHBoxLayout()
-        ctrl.addWidget(QLabel("Country 1:"))
+        lbl1 = QLabel("Country 1:")
+        lbl1.setStyleSheet("font-size: 14px;")
+        ctrl.addWidget(lbl1)
         self.ttest_c1 = QComboBox()
+        self.ttest_c1.setStyleSheet("font-size: 14px;")
         ctrl.addWidget(self.ttest_c1)
-        ctrl.addWidget(QLabel("Country 2:"))
+        lbl2 = QLabel("Country 2:")
+        lbl2.setStyleSheet("font-size: 14px;")
+        ctrl.addWidget(lbl2)
         self.ttest_c2 = QComboBox()
+        self.ttest_c2.setStyleSheet("font-size: 14px;")
         ctrl.addWidget(self.ttest_c2)
         ctrl.addStretch(1)
         self.ttest_run = QPushButton("Run")
+        self.ttest_run.setStyleSheet("font-size: 14px;")
         self.ttest_run.clicked.connect(self.on_run_ttest)
         ctrl.addWidget(self.ttest_run)
         layout.addLayout(ctrl)
@@ -352,18 +376,25 @@ class StatsTestsPage(QWidget):
         self.model_t_counts = PandasModel()
         self.table_t_counts.setModel(self.model_t_counts)
         self.table_t_counts.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        layout.addWidget(QLabel("Number of customers:"))
+        self.table_t_counts.setStyleSheet("font-size: 14px;")
+        lbl_counts = QLabel("Number of customers:")
+        lbl_counts.setStyleSheet("font-size: 14px;")
+        layout.addWidget(lbl_counts)
         layout.addWidget(self.table_t_counts)
 
         self.table_t_percent = QTableView(self)
         self.model_t_percent = PandasModel()
         self.table_t_percent.setModel(self.model_t_percent)
         self.table_t_percent.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        layout.addWidget(QLabel("Percentage of Returned customer per selected countries:"))
+        self.table_t_percent.setStyleSheet("font-size: 14px;")
+        lbl_pct = QLabel("Percentage of Returned customer per selected countries:")
+        lbl_pct.setStyleSheet("font-size: 14px;")
+        layout.addWidget(lbl_pct)
         layout.addWidget(self.table_t_percent)
 
         self.t_text = QTextEdit(self)
         self.t_text.setReadOnly(True)
+        self.t_text.setStyleSheet("font-size: 14px;")
         layout.addWidget(self.t_text)
 
         return page
@@ -452,6 +483,7 @@ class MainWindow(QMainWindow):
         # Sidebar
         self.sidebar = QListWidget(self)
         self.sidebar.setFixedWidth(260)
+        self.sidebar.setStyleSheet("font-size: 16px;")
         self.sidebar.addItem(QListWidgetItem("Executive Summary"))
         self.sidebar.addItem(QListWidgetItem("LTV Factors"))
         self.sidebar.addItem(QListWidgetItem("LTV Cohorts"))
