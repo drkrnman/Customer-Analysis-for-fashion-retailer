@@ -1,5 +1,7 @@
 import sys
 import os
+import shutil
+import subprocess
 from typing import Optional
 
 import pandas as pd
@@ -129,10 +131,30 @@ class SummaryPage(QWidget):
         layout.addWidget(self.text)
         self.load_summary()
 
+    def _try_convert_docx_to_pdf(self, docx_path: str, out_dir: str) -> bool:
+        try:
+            lo_bin = shutil.which('soffice') or shutil.which('libreoffice')
+            if not lo_bin:
+                return False
+            result = subprocess.run(
+                [lo_bin, '--headless', '--convert-to', 'pdf', '--outdir', out_dir, docx_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            return result.returncode == 0
+        except Exception:
+            return False
+
     def load_summary(self) -> None:
         try:
             base_dir = os.path.dirname(os.path.abspath(__file__))
             pdf_path = os.path.join(base_dir, 'Executive_summary.pdf')
+            if not os.path.exists(pdf_path):
+                docx_path = os.path.join(base_dir, 'Executive_summary.docx')
+                if os.path.exists(docx_path):
+                    if self._try_convert_docx_to_pdf(docx_path, base_dir) and os.path.exists(pdf_path):
+                        pass
             if os.path.exists(pdf_path):
                 self._pdf_doc.load(pdf_path)
                 self._pdf_view.setDocument(self._pdf_doc)
@@ -359,7 +381,7 @@ class StatsTestsPage(QWidget):
 
         self.chi_text = QTextEdit(self)
         self.chi_text.setReadOnly(True)
-        self.chi_text.setStyleSheet("font-size: 14px;")
+        self.chi_text.setStyleSheet("font-size: 16px;")
         layout.addWidget(self.chi_text)
 
         return page
@@ -418,7 +440,7 @@ class StatsTestsPage(QWidget):
 
         self.t_text = QTextEdit(self)
         self.t_text.setReadOnly(True)
-        self.t_text.setStyleSheet("font-size: 14px;")
+        self.t_text.setStyleSheet("font-size: 16px;")
         layout.addWidget(self.t_text)
 
         return page
