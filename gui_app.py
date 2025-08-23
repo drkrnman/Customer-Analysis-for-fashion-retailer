@@ -121,6 +121,8 @@ class SummaryPage(QWidget):
 
         self._pdf_doc = QPdfDocument(self)
         self._pdf_view = QPdfView(self)
+        self._pdf_view.setPageMode(QPdfView.PageMode.MultiPage)
+        self._pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
         self._pdf_view.setVisible(False)
         layout.addWidget(self._pdf_view)
 
