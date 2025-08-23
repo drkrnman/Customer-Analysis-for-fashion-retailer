@@ -140,16 +140,18 @@ class SummaryPage(QWidget):
 
         def on_loaded(ok: bool) -> None:
             if ok:
-                self.message.setVisible(False)
                 self._pdf_view.setVisible(False)
                 self.web.setVisible(True)
+                self.message.setText("Viewer: Web (PDF plugin)")
+                self.message.setVisible(True)
             else:
                 self.web.setVisible(False)
                 try:
                     self._pdf_doc.load(pdf_path)
                     self._pdf_view.setDocument(self._pdf_doc)
                     self._pdf_view.setVisible(True)
-                    self.message.setVisible(False)
+                    self.message.setText("Viewer: Native (Qt PDF)")
+                    self.message.setVisible(True)
                 except Exception as e:
                     self._pdf_view.setVisible(False)
                     self.message.setVisible(True)
