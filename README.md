@@ -34,7 +34,6 @@ The app loads precomputed metrics from `customer_stats.csv` in the project root.
 - Business logic from the original CLI version is preserved; only the UI has changed to GUI.
 
 ## Authors
-Darya Korenman
-
-Ilia Usovich
+- Darya Korenman 
+- Ilia Usovich
 
