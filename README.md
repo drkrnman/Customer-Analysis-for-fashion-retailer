@@ -1,46 +1,38 @@
-# Data-analisys-project---Global-fascion-retail-sales
+# Global Fashion Retail Sales - GUI
 
-## Project Goal
-The goal of this project is to determine the difference in customer profitability across different customer segments.  
-We use **LTV (LifeTime Value) for 6 months** — the average revenue per customer during the first 6 months since their first purchase.
+## Overview
+Interactive PySide6 desktop app to analyze customer LTV, cohorts, revenue structure, and run basic statistical tests.
 
-## Dataset
-The dataset is provided and contains information about:
-- Customers
-- Transactions
-- Products
-- Stores
-- Discounts
-- Employees
+- LTV factors by selected dimensions
+- LTV cohort dynamics (6 months)
+- Revenue structure comparison (pie charts)
+- Statistical tests: Chi-square and T-test
+- Executive Summary rendered from a local PDF
 
-CSV files included:
-- `customers.csv`
-- `transactions.csv`
-- `products.csv`
-- `stores.csv`
-- `discounts.csv`
-- `employees.csv`
-- `customer_stats.csv` (calculated metrics)
-- `purchases_final.csv` (processed dataset)
-
-## User’s CLI
-The project has a command-line interface (CLI) that allows users to:
-1. Select a report or analysis type from a menu.
-2. View aggregated metrics and visualizations for different customer segments.
-
-*The dataset is preloaded, so the user does not need to provide any CSV files.*
-
-## Installation
-1. Clone the repository.
-2. Install dependencies using: `pip install -r requirements.txt`.
-3. Run the project: `python main.py`.
+## Data
+The app loads precomputed metrics from `customer_stats.csv` in the project root. Keep this file alongside the app.
 
 ## Requirements
-All required Python packages are listed in `requirements.txt`.
+- Python 3.10+
+- See `requirements.txt` for Python dependencies
+
+## Install
+1. Create and activate a virtual environment (recommended)
+2. Install dependencies:
+   - `pip install -r requirements.txt`
+
+## Run
+- `python main.py`
+
+## Executive Summary (PDF)
+- Place a file named `Executive_summary.pdf` in the project root (next to `gui_app.py` and `main.py`).
+- The app uses the native Qt PDF viewer (multi-page, fit-to-width).
 
 ## Notes
-- Python 3.10+ is recommended.
-- Large CSV files are tracked using Git LFS to ensure compatibility with GitHub.
+- All UI text is in English.
+- One chart per page is shown; tables are rendered via `QTableView`.
+- Business logic from the original CLI version is preserved; only the UI has changed to GUI.
 
 ## Author
 Darya Korenman
+Ilia Usovich
