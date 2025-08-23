@@ -24,6 +24,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings
+from PySide6.QtPdf import QPdfDocument
+from PySide6.QtPdfWidgets import QPdfView
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
@@ -108,15 +110,50 @@ class SummaryPage(QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 20px;")
         layout.addWidget(title)
 
+        self.message = QLabel("")
+        self.message.setStyleSheet("font-size: 14px; color: #666;")
+        self.message.setVisible(False)
+        layout.addWidget(self.message)
+
         self.web = QWebEngineView(self)
         self.web.settings().setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, True)
         layout.addWidget(self.web)
+
+        self._pdf_doc = QPdfDocument(self)
+        self._pdf_view = QPdfView(self)
+        self._pdf_view.setVisible(False)
+        layout.addWidget(self._pdf_view)
 
         self.load_summary()
 
     def load_summary(self) -> None:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         pdf_path = os.path.join(base_dir, 'Executive_summary.pdf')
+        if not os.path.exists(pdf_path):
+            self.web.setVisible(False)
+            self._pdf_view.setVisible(False)
+            self.message.setVisible(True)
+            self.message.setText(f"Executive_summary.pdf not found at: {pdf_path}")
+            return
+
+        def on_loaded(ok: bool) -> None:
+            if ok:
+                self.message.setVisible(False)
+                self._pdf_view.setVisible(False)
+                self.web.setVisible(True)
+            else:
+                self.web.setVisible(False)
+                try:
+                    self._pdf_doc.load(pdf_path)
+                    self._pdf_view.setDocument(self._pdf_doc)
+                    self._pdf_view.setVisible(True)
+                    self.message.setVisible(False)
+                except Exception as e:
+                    self._pdf_view.setVisible(False)
+                    self.message.setVisible(True)
+                    self.message.setText(f"Unable to open PDF: {e}")
+
+        self.web.loadFinished.connect(on_loaded)
         self.web.setUrl(QUrl.fromLocalFile(pdf_path))
 
 
