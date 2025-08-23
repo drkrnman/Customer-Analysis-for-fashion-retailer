@@ -1,4 +1,4 @@
-# Global Fashion Retail Sales 
+# Сustomer Analysis for Fashion Retailer 
 
 ## Overview
 Interactive PySide6 desktop app to analyze customer LTV, cohorts, revenue structure, and run basic statistical tests.
