@@ -35,4 +35,6 @@ The app loads precomputed metrics from `customer_stats.csv` in the project root.
 
 ## Authors
 Darya Korenman
+
 Ilia Usovich
+
