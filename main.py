@@ -6,6 +6,8 @@ from utils import (
     statistical_tests
 )
 
+# Legacy CLI kept for reference. The app now launches the GUI from gui_app.py
+
 def print_menu():
     print("\n\t\t Global Fashion Retail Sales:")
     print("\nMain menu")
@@ -17,35 +19,11 @@ def print_menu():
     print("5. Statistical test")
     print("0. Exit")
 
+
 def main():
-    while True:
-        try:
-            print_menu()
-            choice = input("\nEnter the number in the list (or 'exit'): ").strip()
+    from gui_app import run_gui
+    run_gui()
 
-            if choice.lower() == 'exit' or choice == '0':
-                print("Finished, bye!")
-                break
-
-            choice = int(choice)
-
-            match choice:
-                case 1:
-                    read_summary()
-                case 2:
-                    ltv_factors()
-                case 3:
-                    ltv_cohort()
-                case 4:
-                    revenue_structure()
-                case 5:
-                    statistical_tests()
-                case _:
-                    print("Not an option!")
-        except ValueError:
-            print("Please enter a number or 'exit'.")
-        except Exception as e:
-            print(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
     main()

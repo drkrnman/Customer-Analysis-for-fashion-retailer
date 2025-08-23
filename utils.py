@@ -106,7 +106,8 @@ def wrap_label(s, width=24):
 # =====================
 # Visualization functions
 # =====================
-def create_bar_plot(data, title, formatters, figsize=(14, 6)):
+
+def create_bar_plot(data, title, formatters, figsize=(14, 6), show=True):
     try:
         data_plot = data.drop("Total", errors="ignore").sort_index(ascending=False)
         if data_plot.empty:
@@ -152,13 +153,16 @@ def create_bar_plot(data, title, formatters, figsize=(14, 6)):
                 ax.set_xlim(x0, rightmost * 1.05)
 
         fig.canvas.mpl_connect("draw_event", adjust_limits)
-        plt.show()
+        if show:
+            plt.show()
+        return fig
 
     except Exception as e:
         print(f"Error while plotting the graph: {e}")
+        return None
 
 
-def create_line_plot(metric_ltv, metric_returned_cust, title, index_name, figsize=(16, 9)):
+def create_line_plot(metric_ltv, metric_returned_cust, title, index_name, figsize=(16, 9), show=True):
     try:
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, sharex=True)
 
@@ -195,12 +199,15 @@ def create_line_plot(metric_ltv, metric_returned_cust, title, index_name, figsiz
         )
 
         fig.suptitle(wrap_label(title, 68), fontsize=16)
-        plt.show()
+        if show:
+            plt.show()
+        return fig
     except Exception as e:
         print(f"Error while plotting line charts: {e}")
+        return None
 
 
-def create_pie_plot(data, title, figsize=(16, 6)):
+def create_pie_plot(data, title, figsize=(16, 6), show=True):
     """Two pies with a shared figure legend OUTSIDE; nothing gets clipped."""
     try:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
@@ -238,9 +245,12 @@ def create_pie_plot(data, title, figsize=(16, 6)):
             fontsize=10,
         )
 
-        plt.show()
+        if show:
+            plt.show()
+        return fig
     except Exception as e:
         print(f"Error while plotting pie charts: {e}")
+        return None
 
 # =====================
 # Strings / menu
@@ -499,3 +509,132 @@ def t_test_custom(df, groups, groups_name, columns, columns_name, group_1, group
             print(f"There is NO statistically significant evidence that {groups_name}differs for {group_1} and {group_2}.")
     except Exception as e:
         print(f"Error in t_test_custom: {e}")
+
+# =====================
+# GUI-friendly computation helpers (no prints, no input)
+# =====================
+
+def compute_ltv_factors_for_column(df, column_name):
+    """Compute LTV factors table for a specific column; returns (metrics_df, title, formatters)."""
+    agg_funcs = {
+        'first_purchase_sum': 'sum',
+        'next_sum': 'sum',
+        'customer_id': 'count',
+        'returned_customer': 'sum',
+        'next_purchases_cnt': 'sum',
+    }
+    metrics = df.pivot_table(index=column_name, aggfunc=agg_funcs)
+    metrics.loc['Total'] = metrics.sum()
+
+    metrics['LTV'] = ((metrics['first_purchase_sum'] + metrics['next_sum']) / metrics['customer_id']).round(2)
+    metrics['Num of cust'] = metrics['customer_id'].round(0)
+    metrics['Pers of cust'] = (metrics['customer_id'] / len(df) * 100).round(1)
+    metrics['Perc rep cust'] = (metrics['returned_customer'] / metrics['customer_id'] * 100).round(1)
+    metrics['Avg num pur'] = (metrics['next_purchases_cnt'] / metrics['returned_customer']).round(1)
+    metrics['First pur'] = (metrics['first_purchase_sum'] / metrics['customer_id']).round(2)
+    metrics['Rep pur'] = (metrics['next_sum'] / metrics['returned_customer']).round(2)
+
+    metrics = metrics[
+        ['LTV', 'Num of cust', 'Pers of cust', 'Perc rep cust', 'Avg num pur', 'First pur', 'Rep pur']
+    ]
+    title = f"LTV factors. Split by {columns_str.get(column_name, column_name)}."
+    formatters = [format_float, format_int_thousands, format_percent, format_percent, format_float, format_int, format_int]
+    return metrics, title, formatters
+
+
+def compute_ltv_cohort_for_column(df, column_name):
+    """Compute LTV cohort dynamics; returns (metric_ltv_df, metric_returned_cust_df, title, index_name)."""
+    agg_funcs = {
+        'first_purchase_sum': 'sum',
+        'customer_id': 'count',
+        'returned_customer': 'sum',
+        'next_sum': 'sum',
+    }
+    metrics = df.pivot_table(
+        index=column_name,
+        columns='cohort_month',
+        values=list(agg_funcs.keys()),
+        aggfunc=agg_funcs,
+    )
+    metric_ltv = ((metrics['first_purchase_sum'] + metrics['next_sum']) / metrics['customer_id']).round(2)
+    metric_returned_cust = (metrics['returned_customer'] / metrics['customer_id']).round(2)
+
+    title = f"LTV dynamics split by {columns_str.get(column_name, column_name)}."
+    index_name = column_name
+    return metric_ltv, metric_returned_cust, title, index_name
+
+
+def compute_revenue_structure_for_column(df, column_name):
+    """Compute revenue structure metrics; returns (metrics_df, title)."""
+    agg_funcs = {'first_purchase_sum': 'sum', 'next_sum': 'sum', 'customer_id': 'count'}
+    metrics = df.pivot_table(index=column_name, aggfunc=agg_funcs)
+    total_revenue = df['first_purchase_sum'].sum() + df['next_sum'].sum()
+    total_customers = len(df)
+
+    metrics['Pers of revenue'] = ((metrics['first_purchase_sum'] + metrics['next_sum']) / total_revenue * 100).round(1)
+    metrics['Pers of customers'] = (metrics['customer_id'] / total_customers * 100).round(1)
+    metrics = metrics[['Pers of revenue', 'Pers of customers']]
+
+    title = f"Distribution by {columns_str.get(column_name, column_name)}"
+    return metrics, title
+
+
+def compute_chi2_result(df, groups, groups_name, columns, columns_name):
+    """Compute chi-square test artifacts and textual interpretation."""
+    contingency_table = pd.crosstab(df[groups], df[columns])
+    contingency_table_percent = (pd.crosstab(df[groups], df[columns], normalize='columns') * 100).round(0)
+    chi2_stat, p_value, dof, expected = stats.chi2_contingency(contingency_table)
+
+    null_hypothesis = f"Null hypothesis: {groups_name} distribution is independent of {columns_name}."
+    decision = 'reject' if p_value < 0.05 else 'fail_to_reject'
+    interpretation = (
+        f"There is statistical evidence that {groups_name} distribution differs across {columns_name}."
+        if decision == 'reject'
+        else f"There is NO statistical evidence that {groups_name} distribution differs across {columns_name}."
+    )
+    return {
+        'contingency_table': contingency_table,
+        'contingency_table_percent': contingency_table_percent,
+        'p_value': float(np.round(p_value, 3)),
+        'decision': decision,
+        'null_hypothesis': null_hypothesis,
+        'interpretation': interpretation,
+    }
+
+
+def compute_ttest_result(df, groups, groups_name, columns, columns_name, group_1, group_2):
+    """Compute independent t-test artifacts and textual interpretation for two groups."""
+    contingency_table = pd.crosstab(df[groups], df[columns])
+    if True in contingency_table.index:
+        percent_true = (contingency_table.loc[True] / contingency_table.sum()) * 100
+    elif 1 in contingency_table.index:
+        percent_true = (contingency_table.loc[1] / contingency_table.sum()) * 100
+    else:
+        true_row = contingency_table.loc[(contingency_table.index != 0)].sum()
+        percent_true = (true_row / contingency_table.sum()) * 100
+
+    customers_group1 = df[df[columns] == group_1][groups]
+    customers_group2 = df[df[columns] == group_2][groups]
+
+    t_stat, p_value = stats.ttest_ind(customers_group1, customers_group2)
+
+    null_hypothesis = f"Null hypothesis: percentage of returned customers is the same for {group_1} and {group_2}."
+    decision = 'reject' if p_value < 0.05 else 'fail_to_reject'
+    interpretation = (
+        f"There is statistical evidence that percentage of {groups_name} differs for {group_1} and {group_2}."
+        if decision == 'reject'
+        else f"There is NO statistically significant evidence that {groups_name} differs for {group_1} and {group_2}."
+    )
+
+    return {
+        'contingency_table': contingency_table,
+        'percent_true': percent_true,
+        'p_value': float(np.round(p_value, 3)),
+        'decision': decision,
+        'null_hypothesis': null_hypothesis,
+        'interpretation': interpretation,
+        'group_1': group_1,
+        'group_2': group_2,
+        'groups_name': groups_name,
+        'columns_name': columns_name,
+    }
