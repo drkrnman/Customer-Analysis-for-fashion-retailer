@@ -22,6 +22,8 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QHeaderView,
 )
+from PySide6.QtPdf import QPdfDocument
+from PySide6.QtPdfWidgets import QPdfView
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
@@ -114,6 +116,13 @@ class SummaryPage(QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 20px;")
         layout.addWidget(title)
 
+        self._pdf_doc = QPdfDocument(self)
+        self._pdf_view = QPdfView(self)
+        self._pdf_view.setPageMode(QPdfView.PageMode.MultiPage)
+        self._pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
+        self._pdf_view.setVisible(False)
+        layout.addWidget(self._pdf_view)
+
         self.text = QTextEdit(self)
         self.text.setReadOnly(True)
         self.text.setStyleSheet("font-size: 16px;")
@@ -122,16 +131,31 @@ class SummaryPage(QWidget):
 
     def load_summary(self) -> None:
         try:
-            docx_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Executive_summary.docx')
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            pdf_path = os.path.join(base_dir, 'Executive_summary.pdf')
+            if os.path.exists(pdf_path):
+                self._pdf_doc.load(pdf_path)
+                self._pdf_view.setDocument(self._pdf_doc)
+                self._pdf_view.setVisible(True)
+                self.text.setVisible(False)
+                return
+
+            docx_path = os.path.join(base_dir, 'Executive_summary.docx')
             if HAS_MAMMOTH and os.path.exists(docx_path):
                 with open(docx_path, 'rb') as f:
                     result = mammoth.convert_to_html(f)
                     html = result.value or ""
+                self._pdf_view.setVisible(False)
+                self.text.setVisible(True)
                 self.text.setHtml(html if html.strip() else "No executive summary found.")
             else:
                 text_lines = read_file('Executive_summary.docx', 'docx')
+                self._pdf_view.setVisible(False)
+                self.text.setVisible(True)
                 self.text.setPlainText("\n".join(text_lines) if text_lines else "No executive summary found.")
         except Exception as e:
+            self._pdf_view.setVisible(False)
+            self.text.setVisible(True)
             self.text.setPlainText(f"Error loading summary: {e}")
 
 

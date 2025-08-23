@@ -183,20 +183,29 @@ def create_pie_plot(data, title, figsize=(16, 6), show=True):
 
         labels_wrapped = [wrap_label(str(lbl), 24) for lbl in data.index]
 
+        def autopct_hide_small(pct):
+            try:
+                return f"{pct:.0f}%" if pct >= 1 else ""
+            except Exception:
+                return ""
+
+        values_revenue = pd.Series(data['Pers of revenue']).astype(float).fillna(0.0)
+        values_customers = pd.Series(data['Pers of customers']).astype(float).fillna(0.0)
+
         ax1.set_title('Percentage of revenue', fontsize=13, pad=8)
         wedges1, texts1, autotexts1 = ax1.pie(
-            data['Pers of revenue'],
+            values_revenue,
             labels=None,  # keep labels in legend only (cleaner)
-            autopct='%.0f%%',
+            autopct=autopct_hide_small,
             startangle=90,
             textprops={'fontsize': 10},
         )
 
         ax2.set_title('Percentage of customers', fontsize=13, pad=8)
         wedges2, texts2, autotexts2 = ax2.pie(
-            data['Pers of customers'],
+            values_customers,
             labels=None,
-            autopct='%.0f%%',
+            autopct=autopct_hide_small,
             startangle=90,
             textprops={'fontsize': 10},
         )
