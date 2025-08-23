@@ -4,7 +4,7 @@ from typing import Optional
 
 import pandas as pd
 
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QUrl
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -22,8 +22,6 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QHeaderView,
 )
-from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
 
@@ -110,20 +108,15 @@ class SummaryPage(QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 20px;")
         layout.addWidget(title)
 
-        self.message = QLabel("")
-        self.message.setStyleSheet("font-size: 14px; color: #666;")
-        self.message.setVisible(False)
-        layout.addWidget(self.message)
-
-        self.web = QWebEngineView(self)
-        self.web.settings().setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, True)
-        layout.addWidget(self.web)
+        self.status = QLabel("")
+        self.status.setStyleSheet("font-size: 12px; color: #888;")
+        self.status.setVisible(False)
+        layout.addWidget(self.status)
 
         self._pdf_doc = QPdfDocument(self)
         self._pdf_view = QPdfView(self)
         self._pdf_view.setPageMode(QPdfView.PageMode.MultiPage)
         self._pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
-        self._pdf_view.setVisible(False)
         layout.addWidget(self._pdf_view)
 
         self.load_summary()
@@ -132,33 +125,12 @@ class SummaryPage(QWidget):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         pdf_path = os.path.join(base_dir, 'Executive_summary.pdf')
         if not os.path.exists(pdf_path):
-            self.web.setVisible(False)
-            self._pdf_view.setVisible(False)
-            self.message.setVisible(True)
-            self.message.setText(f"Executive_summary.pdf not found at: {pdf_path}")
+            self.status.setText(f"Executive_summary.pdf not found at: {pdf_path}")
+            self.status.setVisible(True)
             return
-
-        def on_loaded(ok: bool) -> None:
-            if ok:
-                self._pdf_view.setVisible(False)
-                self.web.setVisible(True)
-                self.message.setText("Viewer: Web (PDF plugin)")
-                self.message.setVisible(True)
-            else:
-                self.web.setVisible(False)
-                try:
-                    self._pdf_doc.load(pdf_path)
-                    self._pdf_view.setDocument(self._pdf_doc)
-                    self._pdf_view.setVisible(True)
-                    self.message.setText("Viewer: Native (Qt PDF)")
-                    self.message.setVisible(True)
-                except Exception as e:
-                    self._pdf_view.setVisible(False)
-                    self.message.setVisible(True)
-                    self.message.setText(f"Unable to open PDF: {e}")
-
-        self.web.loadFinished.connect(on_loaded)
-        self.web.setUrl(QUrl.fromLocalFile(pdf_path))
+        self._pdf_doc.load(pdf_path)
+        self._pdf_view.setDocument(self._pdf_doc)
+        self.status.setVisible(False)
 
 
 class LtvFactorsPage(QWidget):
