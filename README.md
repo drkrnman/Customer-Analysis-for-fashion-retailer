@@ -34,7 +34,7 @@ The app loads precomputed metrics from `customer_stats.csv` in the project root.
 - Business logic from the original CLI version is preserved; only the UI has changed to GUI.
 
 ## Data sourse link
-`https://www.kaggle.com/datasets/ricgomes/global-fashion-retail-stores-dataset`
+https://www.kaggle.com/datasets/ricgomes/global-fashion-retail-stores-dataset
 
 ## Authors
 - Darya Korenman 
