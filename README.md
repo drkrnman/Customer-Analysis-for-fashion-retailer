@@ -28,11 +28,6 @@ The app loads precomputed metrics from `customer_stats.csv` in the project root.
 - Place a file named `Executive_summary.pdf` in the project root (next to `gui_app.py` and `main.py`).
 - The app uses the native Qt PDF viewer (multi-page, fit-to-width).
 
-## Notes
-- All UI text is in English.
-- One chart per page is shown; tables are rendered via `QTableView`.
-- Business logic from the original CLI version is preserved; only the UI has changed to GUI.
-
 ## Data sourse link
 https://www.kaggle.com/datasets/ricgomes/global-fashion-retail-stores-dataset
 
